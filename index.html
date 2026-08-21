@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>한국사 기본 기출 랜덤 퀴즈</title>
+<meta name="description" content="한국사능력검정시험 기본 기출문제(10개 회차) 시대별 랜덤 출제 · 채점 · 해설 · 오답노트">
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --ink:#1c2330; --sub:#68707f; --line:#e3e6eb;
+  --acc:#2f6fed; --acc-ink:#ffffff; --ok:#14934a; --ok-bg:#e7f6ec; --bad:#d93a3a; --bad-bg:#fdecec;
+  --chip:#eef1f5; --chip-on:#2f6fed; --shadow:0 1px 3px rgba(20,28,45,.08);
+  --r:14px;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+  line-height:1.5; padding-bottom:env(safe-area-inset-bottom)}
+.wrap{max-width:720px;margin:0 auto;padding:16px 14px 48px}
+h1{font-size:1.25rem;margin:8px 0 2px}
+.sub{color:var(--sub);font-size:.85rem;margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+.card h2{font-size:.95rem;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--chip);color:var(--ink);
+  border-radius:999px;padding:7px 13px;font-size:.85rem;cursor:pointer;user-select:none;
+  transition:background .12s,color .12s,border-color .12s}
+.chip small{color:inherit;opacity:.65;font-size:.75em;margin-left:3px}
+.chip.on{background:var(--chip-on);border-color:var(--chip-on);color:#fff}
+.chip.all{font-weight:600}
+.seg{display:flex;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;width:fit-content}
+.seg button{border:0;background:var(--card);padding:8px 16px;font-size:.9rem;cursor:pointer;color:var(--ink)}
+.seg button.on{background:var(--acc);color:#fff}
+.btn{display:block;width:100%;border:0;border-radius:var(--r);padding:15px;font-size:1.05rem;
+  font-weight:700;cursor:pointer;background:var(--acc);color:var(--acc-ink)}
+.btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line);font-weight:600}
+.btn:disabled{opacity:.45;cursor:default}
+.btn + .btn{margin-top:10px}
+.rowbtns{display:flex;gap:10px}
+.rowbtns .btn{margin-top:0}
+.fold{color:var(--sub);font-size:.82rem;font-weight:500;cursor:pointer;background:none;border:none;padding:4px}
+.hint{color:var(--sub);font-size:.8rem;margin-top:10px}
+.badge{display:inline-block;background:var(--bad);color:#fff;border-radius:999px;
+  font-size:.75rem;padding:1px 8px;margin-left:6px;vertical-align:1px}
+/* quiz */
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px}
+.topbar .meta{font-size:.85rem;color:var(--sub)}
+.prog{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:14px}
+.prog i{display:block;height:100%;background:var(--acc);border-radius:3px;transition:width .25s}
+.qimgbox{background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.qimgbox img{display:block;width:100%;height:auto}
+.era-tag{display:inline-block;font-size:.75rem;color:var(--acc);background:#e8effd;
+  border-radius:6px;padding:2px 8px;font-weight:600}
+.answers{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 6px}
+.answers button{border:1.5px solid var(--line);background:var(--card);border-radius:12px;
+  padding:13px 0;font-size:1.15rem;font-weight:700;cursor:pointer;color:var(--ink);transition:all .1s}
+.answers button:not(:disabled):hover{border-color:var(--acc);color:var(--acc)}
+.answers button.sel-ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.answers button.sel-bad{background:var(--bad);border-color:var(--bad);color:#fff}
+.answers button.reveal{border-color:var(--ok);color:var(--ok);background:var(--ok-bg)}
+.verdict{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.05rem;margin:10px 0 6px}
+.verdict.ok{color:var(--ok)} .verdict.bad{color:var(--bad)}
+.expl{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);
+  border-radius:10px;padding:13px 14px;font-size:.92rem;margin-top:10px}
+.expl b.tp{display:block;margin-bottom:4px}
+/* results */
+.score{font-size:2.2rem;font-weight:800;text-align:center;margin:6px 0}
+.score small{font-size:1rem;color:var(--sub);font-weight:600}
+.tbl{width:100%;border-collapse:collapse;font-size:.88rem}
+.tbl td,.tbl th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left}
+.tbl th{color:var(--sub);font-weight:600;font-size:.8rem}
+.tbl td.num{text-align:right}
+/* wrong note list */
+.witem{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid var(--line)}
+.witem:last-child{border-bottom:0}
+.witem .info{flex:1;min-width:0}
+.witem .t1{font-size:.92rem;font-weight:650}
+.witem .t2{font-size:.78rem;color:var(--sub)}
+.witem .acts{display:flex;gap:6px}
+.sm{border:1px solid var(--line);background:var(--card);border-radius:8px;
+  padding:6px 11px;font-size:.82rem;cursor:pointer;color:var(--ink)}
+.sm.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+.sm.danger{color:var(--bad)}
+.empty{text-align:center;color:var(--sub);padding:34px 0;font-size:.9rem}
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#222a38;color:#fff;
+  padding:10px 18px;border-radius:999px;font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .25s;z-index:50}
+.toast.show{opacity:.94}
+.footer{color:var(--sub);font-size:.72rem;text-align:center;margin-top:26px;line-height:1.7}
+.footer a{color:var(--sub)}
+@media (max-width:480px){
+  .answers{gap:8px}
+  .answers button{padding:12px 0;font-size:1.05rem}
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script>
+"use strict";
+/* ---------- state ---------- */
+const $ = sel => document.querySelector(sel);
+const app = $("#app");
+const CIRCLED = ["①","②","③","④"];
+const LS_WRONG = "khq_wrong_v1";
+const LS_PREF  = "khq_pref_v1";
+const LS_HIST  = "khq_hist_v1";   // quiz session history
+const LS_STAT  = "khq_stat_v1";   // per-question cumulative right/wrong
+
+const DATA = (window.QUIZ_DATA || {eras:[], questions:[]});
+const ALL_ERAS = DATA.eras;
+const ALL_ROUNDS = [...new Set(DATA.questions.map(q=>q.r))].sort((a,b)=>+a-+b);
+const QBYID = Object.fromEntries(DATA.questions.map(q=>[q.id,q]));
+
+let pref = load(LS_PREF, {eras: null, rounds: null, count: 20, autoRemove: true});
+let sel = {
+  eras: new Set(pref.eras || ALL_ERAS),
+  rounds: new Set(pref.rounds || ALL_ROUNDS),
+  count: pref.count || 20
+};
+let quiz = null;   // {list, idx, answers:[], fromNote}
+
+function load(k, d){ try{ const v = JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } }
+function save(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
+function savePref(){ save(LS_PREF, {eras:[...sel.eras], rounds:[...sel.rounds], count:sel.count, autoRemove:pref.autoRemove}); }
+function wrongMap(){ return load(LS_WRONG, {}); }
+function setWrong(m){ save(LS_WRONG, m); }
+function addWrong(q, picked){
+  const m = wrongMap();
+  const e = m[q.id] || {c:0};
+  e.c++; e.t = Date.now(); e.p = picked;
+  m[q.id] = e; setWrong(m);
+}
+function removeWrong(id){ const m = wrongMap(); delete m[id]; setWrong(m); }
+function recordStat(q, ok){
+  const s = load(LS_STAT, {});
+  const e = s[q.id] || {r:0, w:0};
+  ok ? e.r++ : e.w++;
+  s[q.id] = e; save(LS_STAT, s);
+}
+function saveSession(entry){
+  const h = load(LS_HIST, []);
+  h.unshift(entry);
+  if(h.length > 100) h.length = 100;
+  save(LS_HIST, h);
+}
+function toast(msg){
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 1800);
+}
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function imgPath(q){ return `img/${q.r}/${String(q.n).padStart(2,"0")}.webp`; }
+
+/* ---------- pool ---------- */
+function pool(){
+  return DATA.questions.filter(q => sel.eras.has(q.era) && sel.rounds.has(q.r));
+}
+
+/* ---------- home ---------- */
+function renderHome(){
+  quiz = null;
+  const wrongN = Object.keys(wrongMap()).length;
+  const p = pool();
+  const eraCounts = {};
+  DATA.questions.forEach(q=>{ if(sel.rounds.has(q.r)) eraCounts[q.era]=(eraCounts[q.era]||0)+1; });
+  const allEraOn = sel.eras.size === ALL_ERAS.length;
+  const allRndOn = sel.rounds.size === ALL_ROUNDS.length;
+
+  app.innerHTML = `
+  <h1>한국사 기본 기출 랜덤 퀴즈</h1>
+  <p class="sub">한국사능력검정시험 기본 · ${ALL_ROUNDS.length}개 회차 ${DATA.questions.length}문항</p>
+
+  <div class="card">
+    <h2>시대 선택 <button class="fold" id="eraAll">${allEraOn?"전체 해제":"전체 선택"}</button></h2>
+    <div class="chips" id="eraChips">
+      ${ALL_ERAS.map(e=>`<button class="chip ${sel.eras.has(e)?"on":""}" data-era="${esc(e)}">${esc(e)}<small>${eraCounts[e]||0}</small></button>`).join("")}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>문항 수</h2>
+    <div class="seg" id="cntSeg">
+      ${[10,20,30,50].map(n=>`<button data-n="${n}" class="${sel.count===n?"on":""}">${n}</button>`).join("")}
+      <button data-n="0" class="${sel.count===0?"on":""}">전체</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>회차 선택 <button class="fold" id="rndAll">${allRndOn?"전체 해제":"전체 선택"}</button></h2>
+    <div class="chips" id="rndChips">
+      ${ALL_ROUNDS.map(r=>`<button class="chip ${sel.rounds.has(r)?"on":""}" data-rnd="${r}">${r}회</button>`).join("")}
+    </div>
+  </div>
+
+  <button class="btn" id="startBtn" ${p.length===0?"disabled":""}>
+    문제 풀기 시작 (${sel.count===0?p.length:Math.min(sel.count,p.length)}문항 / 선택범위 ${p.length}문항)
+  </button>
+  <div class="rowbtns" style="margin-top:10px">
+    <button class="btn ghost" id="noteBtn">오답노트${wrongN?`<span class="badge">${wrongN}</span>`:""}</button>
+    <button class="btn ghost" id="histBtn">학습 기록</button>
+  </div>
+
+  <p class="footer">기출문제·정답 출처: 국사편찬위원회 한국사능력검정시험 (비상업적 학습용)<br>
+  해설은 자동 생성된 참고용 자료입니다. 오류가 있을 수 있습니다.</p>`;
+
+  $("#eraChips").addEventListener("click", ev=>{
+    const b = ev.target.closest("[data-era]"); if(!b) return;
+    const e = b.dataset.era;
+    sel.eras.has(e) ? sel.eras.delete(e) : sel.eras.add(e);
+    savePref(); renderHome();
+  });
+  $("#eraAll").onclick = ()=>{
+    sel.eras = new Set(sel.eras.size===ALL_ERAS.length ? [] : ALL_ERAS);
+    savePref(); renderHome();
+  };
+  $("#rndChips").addEventListener("click", ev=>{
+    const b = ev.target.closest("[data-rnd]"); if(!b) return;
+    const r = b.dataset.rnd;
+    sel.rounds.has(r) ? sel.rounds.delete(r) : sel.rounds.add(r);
+    savePref(); renderHome();
+  });
+  $("#rndAll").onclick = ()=>{
+    sel.rounds = new Set(sel.rounds.size===ALL_ROUNDS.length ? [] : ALL_ROUNDS);
+    savePref(); renderHome();
+  };
+  $("#cntSeg").addEventListener("click", ev=>{
+    const b = ev.target.closest("[data-n]"); if(!b) return;
+    sel.count = +b.dataset.n; savePref(); renderHome();
+  });
+  $("#startBtn").onclick = ()=>{
+    const list = shuffle(pool().slice());
+    startQuiz(sel.count===0 ? list : list.slice(0, sel.count), false);
+  };
+  $("#noteBtn").onclick = renderNote;
+  $("#histBtn").onclick = renderHistory;
+}
+
+/* ---------- history ---------- */
+function renderHistory(){
+  document.onkeydown = null;
+  const hist = load(LS_HIST, []);
+  const stat = load(LS_STAT, {});
+  // cumulative per-era accuracy
+  const eraAcc = {};
+  Object.entries(stat).forEach(([id, s])=>{
+    const q = QBYID[id]; if(!q) return;
+    const e = eraAcc[q.era] || (eraAcc[q.era]={r:0,w:0});
+    e.r += s.r; e.w += s.w;
+  });
+  const totR = Object.values(eraAcc).reduce((a,e)=>a+e.r,0);
+  const totW = Object.values(eraAcc).reduce((a,e)=>a+e.w,0);
+  const tot = totR + totW;
+  const eraRows = ALL_ERAS.map(e=>{
+    const s = eraAcc[e]; if(!s || s.r+s.w===0) return "";
+    const all = s.r+s.w, pct = Math.round(s.r/all*100);
+    return `<tr><td>${esc(e)}</td>
+      <td style="width:45%"><div style="background:var(--line);border-radius:4px;height:10px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${pct>=70?"var(--ok)":pct>=40?"#e8a23d":"var(--bad)"}"></div></div></td>
+      <td class="num">${pct}% <span style="color:var(--sub)">(${s.r}/${all})</span></td></tr>`;
+  }).join("");
+  app.innerHTML = `
+  <div class="topbar"><button class="sm" id="backBtn">← 홈</button>
+    <span class="meta">학습 기록</span></div>
+  <div class="card">
+    <h2>누적 통계</h2>
+    ${tot?`
+    <div style="display:flex;gap:18px;margin-bottom:12px;text-align:center">
+      <div style="flex:1"><div style="font-size:1.5rem;font-weight:800">${tot}</div><div style="font-size:.75rem;color:var(--sub)">푼 문제</div></div>
+      <div style="flex:1"><div style="font-size:1.5rem;font-weight:800">${Math.round(totR/tot*100)}%</div><div style="font-size:.75rem;color:var(--sub)">누적 정답률</div></div>
+      <div style="flex:1"><div style="font-size:1.5rem;font-weight:800">${hist.length}</div><div style="font-size:.75rem;color:var(--sub)">학습 세션</div></div>
+    </div>
+    <table class="tbl">${eraRows}</table>
+    `:`<div class="empty" style="padding:16px 0">아직 기록이 없습니다.</div>`}
+  </div>
+  <div class="card">
+    <h2>최근 세션</h2>
+    ${hist.length ? hist.slice(0,30).map(h=>{
+      const d = new Date(h.t);
+      const dt = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+      const pct = h.n?Math.round(h.ok/h.n*100):0;
+      return `<div class="witem">
+        <div class="info">
+          <div class="t1">${h.ok} / ${h.n} 문항 <span style="color:${pct>=70?"var(--ok)":pct>=40?"#e8a23d":"var(--bad)"}">(${pct}%)</span>${h.note?' <span class="era-tag">오답복습</span>':""}</div>
+          <div class="t2">${dt} · ${h.gp}점/${h.tp}점 · ${(h.eras||[]).map(esc).join(", ")}${(h.eras||[]).length>=4?" 외":""}</div>
+        </div>
+      </div>`;
+    }).join("") : `<div class="empty" style="padding:16px 0">완료한 세션이 없습니다.</div>`}
+  </div>
+  ${(hist.length||tot)?`<button class="btn ghost" id="clearHist" style="color:var(--bad)">기록 전체 초기화</button>`:""}
+  `;
+  $("#backBtn").onclick = renderHome;
+  const cb = $("#clearHist");
+  if(cb) cb.onclick = ()=>{
+    if(confirm("학습 기록과 누적 통계를 모두 삭제할까요? (오답노트는 유지됩니다)")){
+      localStorage.removeItem(LS_HIST); localStorage.removeItem(LS_STAT); renderHistory();
+    }
+  };
+  window.scrollTo(0,0);
+}
+
+/* ---------- quiz ---------- */
+function startQuiz(list, fromNote){
+  if(!list.length){ toast("출제할 문항이 없습니다"); return; }
+  quiz = {list, idx:0, answers:[], fromNote};
+  renderQ();
+  window.scrollTo(0,0);
+}
+
+function renderQ(){
+  const q = quiz.list[quiz.idx];
+  const total = quiz.list.length;
+  app.innerHTML = `
+  <div class="topbar">
+    <button class="sm" id="quitBtn">종료</button>
+    <span class="meta">${quiz.fromNote?"오답노트 · ":""}${quiz.idx+1} / ${total} &nbsp;·&nbsp; 제${q.r}회 ${q.n}번 · ${q.pts}점</span>
+  </div>
+  <div class="prog"><i style="width:${(quiz.idx)/total*100}%"></i></div>
+  <div class="qimgbox"><img src="${imgPath(q)}" alt="제${q.r}회 ${q.n}번 문제"></div>
+  <div class="answers" id="ansBtns">
+    ${CIRCLED.map((c,i)=>`<button data-a="${i+1}">${c}</button>`).join("")}
+  </div>
+  <div id="feedback"></div>`;
+
+  $("#quitBtn").onclick = ()=> quiz.answers.length ? renderResult() : renderHome();
+  $("#ansBtns").addEventListener("click", ev=>{
+    const b = ev.target.closest("[data-a]"); if(!b) return;
+    answer(+b.dataset.a);
+  });
+  document.onkeydown = ev=>{
+    if(!quiz) return;
+    if(["1","2","3","4"].includes(ev.key) && !quiz.answers[quiz.idx]) answer(+ev.key);
+    if(ev.key==="Enter" && quiz.answers[quiz.idx]) nextQ();
+  };
+  window.scrollTo(0,0);
+}
+
+function answer(pick){
+  if(quiz.answers[quiz.idx]) return;
+  const q = quiz.list[quiz.idx];
+  const ok = pick === q.ans;
+  quiz.answers[quiz.idx] = {pick, ok};
+  const btns = $("#ansBtns").querySelectorAll("button");
+  btns.forEach(b=>{
+    const a = +b.dataset.a;
+    b.disabled = true;
+    if(a===pick) b.classList.add(ok?"sel-ok":"sel-bad");
+    else if(a===q.ans) b.classList.add("reveal");
+  });
+  recordStat(q, ok);
+  if(!ok) addWrong(q, pick);
+  else if(quiz.fromNote && pref.autoRemove){ removeWrong(q.id); toast("오답노트에서 제거되었습니다"); }
+
+  const last = quiz.idx === quiz.list.length-1;
+  $("#feedback").innerHTML = `
+    <div class="verdict ${ok?"ok":"bad"}">${ok?"⭕ 정답입니다!":"❌ 오답입니다. 정답은 "+CIRCLED[q.ans-1]}</div>
+    <div class="expl">
+      <span class="era-tag">${esc(q.era)}</span> <b class="tp" style="display:inline">${esc(q.topic)}</b>
+      <div style="margin-top:7px">${esc(q.exp)}</div>
+    </div>
+    <button class="btn" id="nextBtn" style="margin-top:14px">${last?"결과 보기":"다음 문제"}</button>`;
+  $("#nextBtn").onclick = nextQ;
+  $("#nextBtn").focus();
+}
+
+function nextQ(){
+  if(quiz.idx < quiz.list.length-1){ quiz.idx++; renderQ(); }
+  else renderResult();
+}
+
+/* ---------- result ---------- */
+function renderResult(){
+  document.onkeydown = null;
+  const done = quiz.answers.filter(Boolean);
+  const n = done.length;
+  const okN = done.filter(a=>a.ok).length;
+  if(!quiz.saved && n > 0){
+    quiz.saved = true;
+    let gp=0, tp=0;
+    quiz.list.forEach((q,i)=>{ const a=quiz.answers[i]; if(!a) return; tp+=q.pts; if(a.ok) gp+=q.pts; });
+    saveSession({t: Date.now(), n, ok: okN, gp, tp, note: !!quiz.fromNote,
+      eras: [...new Set(quiz.list.slice(0, quiz.answers.length).map(q=>q.era))].slice(0,4)});
+  }
+  let gotPts=0, totPts=0;
+  const eraStat = {};
+  const wrongs = [];
+  quiz.list.forEach((q,i)=>{
+    const a = quiz.answers[i]; if(!a) return;
+    totPts += q.pts; if(a.ok) gotPts += q.pts;
+    const s = eraStat[q.era] || (eraStat[q.era]={ok:0,all:0});
+    s.all++; if(a.ok) s.ok++;
+    if(!a.ok) wrongs.push({q, pick:a.pick});
+  });
+  app.innerHTML = `
+  <h1>채점 결과</h1>
+  <div class="card">
+    <div class="score">${okN} / ${n} <small>문항</small></div>
+    <div style="text-align:center;color:var(--sub);font-size:.95rem">획득 점수 ${gotPts}점 / ${totPts}점 (정답률 ${n?Math.round(okN/n*100):0}%)</div>
+  </div>
+  <div class="card">
+    <h2>시대별 성적</h2>
+    <table class="tbl"><tr><th>시대</th><th style="text-align:right">정답 / 문항</th></tr>
+    ${Object.entries(eraStat).map(([e,s])=>`<tr><td>${esc(e)}</td><td class="num">${s.ok} / ${s.all}</td></tr>`).join("")}
+    </table>
+  </div>
+  ${wrongs.length?`
+  <div class="card">
+    <h2>이번에 틀린 문제 (${wrongs.length})</h2>
+    ${wrongs.map(w=>`
+      <div class="witem">
+        <div class="info">
+          <div class="t1">제${w.q.r}회 ${w.q.n}번 · ${esc(w.q.topic)}</div>
+          <div class="t2"><span class="era-tag">${esc(w.q.era)}</span> 내 답 ${CIRCLED[w.pick-1]} → 정답 ${CIRCLED[w.q.ans-1]}</div>
+        </div>
+        <div class="acts"><button class="sm" data-view="${w.q.id}">보기</button></div>
+      </div>`).join("")}
+  </div>`:""}
+  <div class="rowbtns">
+    <button class="btn ghost" id="homeBtn">홈으로</button>
+    <button class="btn" id="noteBtn">오답노트${wrongs.length?" 복습":""}</button>
+  </div>`;
+  app.querySelectorAll("[data-view]").forEach(b=> b.onclick = ()=> viewOne(b.dataset.view, renderResult));
+  $("#homeBtn").onclick = renderHome;
+  $("#noteBtn").onclick = renderNote;
+  window.scrollTo(0,0);
+}
+
+/* ---------- single view ---------- */
+function viewOne(id, backFn){
+  const q = QBYID[id]; if(!q) return;
+  app.innerHTML = `
+  <div class="topbar"><button class="sm" id="backBtn">← 돌아가기</button>
+    <span class="meta">제${q.r}회 ${q.n}번 · ${q.pts}점</span></div>
+  <div class="qimgbox"><img src="${imgPath(q)}" alt="문제"></div>
+  <div class="verdict ok" style="margin-top:12px">정답: ${CIRCLED[q.ans-1]}</div>
+  <div class="expl">
+    <span class="era-tag">${esc(q.era)}</span> <b class="tp" style="display:inline">${esc(q.topic)}</b>
+    <div style="margin-top:7px">${esc(q.exp)}</div>
+  </div>`;
+  $("#backBtn").onclick = backFn;
+  window.scrollTo(0,0);
+}
+
+/* ---------- wrong note ---------- */
+function renderNote(){
+  document.onkeydown = null;
+  const m = wrongMap();
+  const items = Object.entries(m)
+    .map(([id,e])=>({q:QBYID[id], e}))
+    .filter(x=>x.q)
+    .sort((a,b)=> b.e.t - a.e.t);
+  app.innerHTML = `
+  <div class="topbar"><button class="sm" id="backBtn">← 홈</button>
+    <span class="meta">오답노트 ${items.length}문항</span></div>
+  ${items.length?`
+  <button class="btn" id="retryAll">오답 전체 다시 풀기 (${items.length})</button>
+  <div style="margin:10px 0 4px;display:flex;align-items:center;gap:8px">
+    <label style="font-size:.82rem;color:var(--sub)">
+      <input type="checkbox" id="autoRm" ${pref.autoRemove?"checked":""}> 다시 풀어 맞히면 자동 제거
+    </label>
+  </div>
+  <div class="card" style="padding:6px 14px">
+    ${items.map(({q,e})=>`
+      <div class="witem">
+        <div class="info">
+          <div class="t1">제${q.r}회 ${q.n}번 · ${esc(q.topic)}</div>
+          <div class="t2"><span class="era-tag">${esc(q.era)}</span> ${e.c}회 틀림 · ${new Date(e.t).toLocaleDateString("ko-KR")}</div>
+        </div>
+        <div class="acts">
+          <button class="sm primary" data-solve="${q.id}">풀기</button>
+          <button class="sm" data-view="${q.id}">해설</button>
+          <button class="sm danger" data-del="${q.id}">삭제</button>
+        </div>
+      </div>`).join("")}
+  </div>`:`<div class="empty">저장된 오답이 없습니다.<br>문제를 풀다 틀리면 자동으로 저장됩니다.</div>`}
+  `;
+  $("#backBtn").onclick = renderHome;
+  if(items.length){
+    $("#retryAll").onclick = ()=> startQuiz(shuffle(items.map(x=>x.q)), true);
+    $("#autoRm").onchange = ev=>{ pref.autoRemove = ev.target.checked; savePref(); };
+    app.querySelectorAll("[data-solve]").forEach(b=> b.onclick = ()=> startQuiz([QBYID[b.dataset.solve]], true));
+    app.querySelectorAll("[data-view]").forEach(b=> b.onclick = ()=> viewOne(b.dataset.view, renderNote));
+    app.querySelectorAll("[data-del]").forEach(b=> b.onclick = ()=>{ removeWrong(b.dataset.del); renderNote(); });
+  }
+  window.scrollTo(0,0);
+}
+
+/* ---------- boot ---------- */
+if(!DATA.questions.length){
+  app.innerHTML = `<div class="empty">문항 데이터(data.js)를 불러오지 못했습니다.</div>`;
+}else{
+  renderHome();
+}
+</script>
+</body>
+</html>
