@@ -479,7 +479,8 @@ function renderNote(){
           <button class="sm danger" data-del="${q.id}">삭제</button>
         </div>
       </div>`).join("")}
-  </div>`:`<div class="empty">저장된 오답이 없습니다.<br>문제를 풀다 틀리면 자동으로 저장됩니다.</div>`}
+  </div>
+  <button class="btn ghost" id="clearNote" style="color:var(--bad)">오답노트 전체 초기화</button>`:`<div class="empty">저장된 오답이 없습니다.<br>문제를 풀다 틀리면 자동으로 저장됩니다.</div>`}
   `;
   $("#backBtn").onclick = renderHome;
   if(items.length){
@@ -488,6 +489,13 @@ function renderNote(){
     app.querySelectorAll("[data-solve]").forEach(b=> b.onclick = ()=> startQuiz([QBYID[b.dataset.solve]], true));
     app.querySelectorAll("[data-view]").forEach(b=> b.onclick = ()=> viewOne(b.dataset.view, renderNote));
     app.querySelectorAll("[data-del]").forEach(b=> b.onclick = ()=>{ removeWrong(b.dataset.del); renderNote(); });
+    $("#clearNote").onclick = ()=>{
+      if(confirm(`오답노트 ${items.length}문항을 전부 삭제할까요?\n삭제하면 되돌릴 수 없습니다. (학습 기록은 유지됩니다)`)){
+        localStorage.removeItem(LS_WRONG);
+        toast("오답노트가 초기화되었습니다");
+        renderNote();
+      }
+    };
   }
   window.scrollTo(0,0);
 }
