@@ -33,6 +33,9 @@ h1{font-size:1.25rem;margin:8px 0 2px}
 .seg{display:flex;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;width:fit-content}
 .seg button{border:0;background:var(--card);padding:8px 16px;font-size:.9rem;cursor:pointer;color:var(--ink)}
 .seg button.on{background:var(--acc);color:#fff}
+.numin{width:74px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;
+  font-size:1rem;text-align:center;color:var(--ink);background:var(--card)}
+.numin:focus{outline:2px solid var(--acc);border-color:var(--acc)}
 .btn{display:block;width:100%;border:0;border-radius:var(--r);padding:15px;font-size:1.05rem;
   font-weight:700;cursor:pointer;background:var(--acc);color:var(--acc-ink)}
 .btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line);font-weight:600}
@@ -116,17 +119,18 @@ const ALL_ERAS = DATA.eras;
 const ALL_ROUNDS = [...new Set(DATA.questions.map(q=>q.r))].sort((a,b)=>+a-+b);
 const QBYID = Object.fromEntries(DATA.questions.map(q=>[q.id,q]));
 
-let pref = load(LS_PREF, {eras: null, rounds: null, count: 20, autoRemove: true});
+let pref = load(LS_PREF, {eras: null, rounds: null, count: 20, autoRemove: true, range: null});
 let sel = {
   eras: new Set(pref.eras || ALL_ERAS),
   rounds: new Set(pref.rounds || ALL_ROUNDS),
-  count: pref.count || 20
+  count: pref.count || 20,
+  range: Array.isArray(pref.range) && pref.range.length===2 ? pref.range.slice() : [1, 50]
 };
 let quiz = null;   // {list, idx, answers:[], fromNote}
 
 function load(k, d){ try{ const v = JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } }
 function save(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
-function savePref(){ save(LS_PREF, {eras:[...sel.eras], rounds:[...sel.rounds], count:sel.count, autoRemove:pref.autoRemove}); }
+function savePref(){ save(LS_PREF, {eras:[...sel.eras], rounds:[...sel.rounds], count:sel.count, autoRemove:pref.autoRemove, range:sel.range.slice()}); }
 function wrongMap(){ return load(LS_WRONG, {}); }
 function setWrong(m){ save(LS_WRONG, m); }
 function addWrong(q, picked){
@@ -160,8 +164,14 @@ function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;"
 function imgPath(q){ return `img/${q.r}/${String(q.n).padStart(2,"0")}.webp`; }
 
 /* ---------- pool ---------- */
+function rangeLoHi(){
+  const a = Math.max(1, Math.min(50, +sel.range[0] || 1));
+  const b = Math.max(1, Math.min(50, +sel.range[1] || 50));
+  return [Math.min(a,b), Math.max(a,b)];
+}
 function pool(){
-  return DATA.questions.filter(q => sel.eras.has(q.era) && sel.rounds.has(q.r));
+  const [lo, hi] = rangeLoHi();
+  return DATA.questions.filter(q => sel.eras.has(q.era) && sel.rounds.has(q.r) && q.n >= lo && q.n <= hi);
 }
 
 /* ---------- home ---------- */
@@ -173,6 +183,7 @@ function renderHome(){
   DATA.questions.forEach(q=>{ if(sel.rounds.has(q.r)) eraCounts[q.era]=(eraCounts[q.era]||0)+1; });
   const allEraOn = sel.eras.size === ALL_ERAS.length;
   const allRndOn = sel.rounds.size === ALL_ROUNDS.length;
+  const [rLo, rHi] = rangeLoHi();
 
   app.innerHTML = `
   <h1>한국사 기본 기출 랜덤 퀴즈</h1>
@@ -198,6 +209,17 @@ function renderHome(){
     <div class="chips" id="rndChips">
       ${ALL_ROUNDS.map(r=>`<button class="chip ${sel.rounds.has(r)?"on":""}" data-rnd="${r}">${r}회</button>`).join("")}
     </div>
+  </div>
+
+  <div class="card">
+    <h2>문항 번호 범위 <button class="fold" id="rngReset">전체 (1~50)</button></h2>
+    <div style="display:flex;align-items:center;gap:9px">
+      <input type="number" class="numin" id="rngLo" min="1" max="50" value="${rLo}">
+      <span>번 부터</span>
+      <input type="number" class="numin" id="rngHi" min="1" max="50" value="${rHi}">
+      <span>번 까지</span>
+    </div>
+    <p class="hint">시험은 시대순 배치라 특정 구간만 골라 연습할 수 있습니다 (예: 후반부 38~50번).</p>
   </div>
 
   <button class="btn" id="startBtn" ${p.length===0?"disabled":""}>
@@ -235,6 +257,13 @@ function renderHome(){
     const b = ev.target.closest("[data-n]"); if(!b) return;
     sel.count = +b.dataset.n; savePref(); renderHome();
   });
+  const applyRange = ()=>{
+    sel.range = [+$("#rngLo").value || 1, +$("#rngHi").value || 50];
+    savePref(); renderHome();
+  };
+  $("#rngLo").onchange = applyRange;
+  $("#rngHi").onchange = applyRange;
+  $("#rngReset").onclick = ()=>{ sel.range = [1, 50]; savePref(); renderHome(); };
   $("#startBtn").onclick = ()=>{
     const list = shuffle(pool().slice());
     startQuiz(sel.count===0 ? list : list.slice(0, sel.count), false);
