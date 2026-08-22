@@ -37,12 +37,16 @@ h1{font-size:1.25rem;margin:8px 0 2px}
   border-radius:12px;padding:12px 6px;font-size:.9rem;font-weight:700;cursor:pointer;
   box-shadow:var(--shadow);transition:background .12s,color .12s,border-color .12s}
 .tabs button.on{background:var(--acc2);border-color:var(--acc2);color:#fff}
-/* 별표 — 문제 이미지 바로 위, 회차·번호 라벨 옆에 둔다 */
+/* 별표 버튼 (해설 단독 보기에서는 회차·번호 라벨 옆, 문제 화면에서는 보기 왼쪽) */
 .qmeta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 8px}
 .starbtn{border:1px solid var(--line);background:var(--card);border-radius:10px;
   padding:3px 11px;font-size:1.2rem;line-height:1.25;cursor:pointer;color:var(--sub);
   flex-shrink:0;transition:color .12s,border-color .12s,background .12s}
 .starbtn.on{color:var(--star);border-color:var(--star);background:var(--star-soft)}
+/* 별표를 보기(①②③④) 왼쪽에 나란히 둔다 — 답을 고르는 손 위치에서 바로 누를 수 있다 */
+.answerrow{display:flex;align-items:stretch;gap:9px;margin:14px 0 6px}
+.answerrow .answers{flex:1;margin:0}
+.answerrow .starbtn{display:flex;align-items:center;justify-content:center;min-width:46px;padding:3px 8px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{border:1px solid var(--line);background:var(--chip);color:var(--ink);
   border-radius:999px;padding:7px 13px;font-size:.85rem;cursor:pointer;user-select:none;
@@ -116,6 +120,8 @@ h1{font-size:1.25rem;margin:8px 0 2px}
 @media (max-width:480px){
   .answers{gap:8px}
   .answers button{padding:12px 0;font-size:1.05rem}
+  .answerrow{gap:8px}
+  .answerrow .starbtn{min-width:42px}
 }
 </style>
 </head>
@@ -130,7 +136,7 @@ h1{font-size:1.25rem;margin:8px 0 2px}
 const $ = sel => document.querySelector(sel);
 const app = $("#app");
 const CIRCLED = ["①","②","③","④"];
-const APP_VERSION = "2026.08.22.2";
+const APP_VERSION = "2026.08.22.3";
 const LS_WRONG = "khq_wrong_v1";
 const LS_STAR  = "khq_star_v1";    // 별표(잘 몰라서 찍은 문제) — 오답과 별개로 보관
 const LS_PREF  = "khq_pref_v1";
@@ -580,12 +586,14 @@ function renderQ(){
   <div class="prog"><i style="width:${(quiz.idx)/total*100}%"></i></div>
   <div class="qmeta">
     <span class="era-tag">제${q.r}회 ${q.n}번 · ${q.pts}점</span>
-    <button class="starbtn ${isStarred(q.id)?"on":""}" id="starBtn"
-      title="잘 몰라서 찍은 문제 — 복습 탭의 별표 목록에 모입니다">${isStarred(q.id)?"★":"☆"}</button>
   </div>
   <div class="qimgbox"><img src="${imgPath(q)}" alt="제${q.r}회 ${q.n}번 문제"></div>
-  <div class="answers" id="ansBtns">
-    ${CIRCLED.map((c,i)=>`<button data-a="${i+1}">${c}</button>`).join("")}
+  <div class="answerrow">
+    <button class="starbtn ${isStarred(q.id)?"on":""}" id="starBtn"
+      title="잘 몰라서 찍은 문제 — 복습 탭의 별표 목록에 모입니다">${isStarred(q.id)?"★":"☆"}</button>
+    <div class="answers" id="ansBtns">
+      ${CIRCLED.map((c,i)=>`<button data-a="${i+1}">${c}</button>`).join("")}
+    </div>
   </div>
   <div id="feedback"></div>`;
 
