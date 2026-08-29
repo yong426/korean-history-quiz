@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>한국사 기본 기출 랜덤 퀴즈</title>
-<meta name="description" content="한국사능력검정시험 기본 기출문제(10개 회차) 시대별 랜덤 출제 · 채점 · 해설 · 오답노트">
+<title>한국사 기본 기출 퀴즈</title>
+<meta name="description" content="한국사능력검정시험 기본 기출문제(10개 회차) 회차·번호순 출제 · 채점 · 해설 · 오답노트">
 <style>
 :root{
   --bg:#f4f5f7; --card:#ffffff; --ink:#1c2330; --sub:#68707f; --line:#e3e6eb;
@@ -79,6 +79,12 @@ h1{font-size:1.25rem;margin:8px 0 2px}
 .prog i{display:block;height:100%;background:var(--acc);border-radius:3px;transition:width .25s}
 .qimgbox{background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .qimgbox img{display:block;width:100%;height:auto}
+/* 가로모드: 문제 풀이 화면을 좌(문제지)/우(답·해설) 2단으로 — 채점 후 시선 이동 없이 해설 확인 */
+@media (orientation:landscape) and (min-width:760px){
+  .wrap:has(.qbody){max-width:1200px}
+  .qbody{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start}
+  .qside{position:sticky;top:12px}
+}
 .era-tag{display:inline-block;font-size:.75rem;color:var(--acc);background:var(--acc-soft);
   border-radius:6px;padding:2px 8px;font-weight:600}
 .answers{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 6px}
@@ -136,7 +142,7 @@ h1{font-size:1.25rem;margin:8px 0 2px}
 const $ = sel => document.querySelector(sel);
 const app = $("#app");
 const CIRCLED = ["①","②","③","④"];
-const APP_VERSION = "2026.08.22.3";
+const APP_VERSION = "2026.08.29.1";
 const LS_WRONG = "khq_wrong_v1";
 const LS_STAR  = "khq_star_v1";    // 별표(잘 몰라서 찍은 문제) — 오답과 별개로 보관
 const LS_PREF  = "khq_pref_v1";
@@ -152,12 +158,11 @@ const ALL_ERAS = DATA.eras;
 const ALL_ROUNDS = [...new Set(DATA.questions.map(q=>q.r))].sort((a,b)=>+a-+b);
 const QBYID = Object.fromEntries(DATA.questions.map(q=>[q.id,q]));
 
-let pref = load(LS_PREF, {eras: null, rounds: null, count: 20, autoRemove: true,
+let pref = load(LS_PREF, {eras: null, rounds: null, autoRemove: true,
                           autoUnstar: false, range: null, homeTab: "practice"});
 let sel = {
   eras: new Set(pref.eras || ALL_ERAS),
   rounds: new Set(pref.rounds || ALL_ROUNDS),
-  count: pref.count || 20,
   range: Array.isArray(pref.range) && pref.range.length===2 ? pref.range.slice() : [1, 50]
 };
 let quiz = null;         // {list, idx, answers:[], fromNote, fromStar, seq}
@@ -166,7 +171,7 @@ let noteEra = "all";     // 복습 목록의 시대 필터
 
 function load(k, d){ try{ const v = JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } }
 function save(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
-function savePref(){ save(LS_PREF, {eras:[...sel.eras], rounds:[...sel.rounds], count:sel.count,
+function savePref(){ save(LS_PREF, {eras:[...sel.eras], rounds:[...sel.rounds],
   autoRemove:pref.autoRemove, autoUnstar:pref.autoUnstar, range:sel.range.slice(), homeTab:pref.homeTab}); }
 function wrongMap(){ return load(LS_WRONG, {}); }
 function setWrong(m){ save(LS_WRONG, m); }
@@ -203,10 +208,8 @@ function toast(msg){
   const t = $("#toast"); t.textContent = msg; t.classList.add("show");
   clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 1800);
 }
-function shuffle(a){
-  for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
-  return a;
-}
+/* 출제 순서는 항상 회차 → 문항번호 순 (2026-08-29 무작위에서 변경 — 시험지 흐름 그대로 풀기) */
+function byRoundAndNumber(a, b){ return (+a.r - +b.r) || (a.n - b.n); }
 function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 function imgPath(q){ return `img/${q.r}/${String(q.n).padStart(2,"0")}.webp`; }
 
@@ -246,13 +249,6 @@ function markServedOne(id, seq){
   r.m[id] = seq; saveRecent(r);
 }
 function servedCount(){ const m = recentLog().m; return Object.keys(m).filter(id=>QBYID[id]).length; }
-/* 오래된 것 우선, 같은 회차끼리는 무작위 (먼저 섞고 안정 정렬하면 동순위 안에서 순서가 무작위로 남는다) */
-function pickLRU(arr, n){
-  if(n <= 0 || !arr.length) return [];
-  if(n >= arr.length) return shuffle(arr.slice());
-  const m = recentLog().m;
-  return shuffle(arr.slice()).sort((a,b)=> (m[a.id]||0) - (m[b.id]||0)).slice(0, n);
-}
 /* 1회성: 이 기능이 생기기 전에 이미 푼 문항(누적 통계에 있는 것)을 '오래전에 푼 것'으로 채운다 */
 function migrateRecent(){
   const r = recentLog();
@@ -264,9 +260,8 @@ function migrateRecent(){
 }
 function freshHint(){
   const total = DATA.questions.length, seen = servedCount();
-  return `<b>최근 출제 회피</b> — 한 번 푼 문항은 뒤로 미루고 오래전에 푼 문항·아직 안 풀어본 문항을 먼저 뽑습니다. `
-    + (seen ? `지금까지 ${seen}문항을 풀었고 <b>${total-seen}문항</b>이 남아 있습니다.`
-            : `아직 푼 문항이 없어 ${total}문항 전체가 대상입니다.`);
+  return `<b>순차 출제</b> — 선택한 범위의 문항이 회차·번호 순서대로 나옵니다. 중간에 '정지'를 누르면 저장되고 이어서 풀 수 있습니다. `
+    + (seen ? `지금까지 ${seen} / ${total}문항을 풀었습니다.` : ``);
 }
 
 /* ---------- 중간 저장 / 이어서 풀기 (일반·오답복습·별표복습을 각각 따로 보관) ---------- */
@@ -349,7 +344,7 @@ const TABS = [
   {k:"history",  label:"학습 기록"},
 ];
 function headerHtml(){
-  return `<h1>한국사 기본 기출 랜덤 퀴즈</h1>
+  return `<h1>한국사 기본 기출 퀴즈</h1>
   <p class="sub">한국사능력검정시험 기본 · ${ALL_ROUNDS.length}개 회차 ${DATA.questions.length}문항</p>`;
 }
 /* 저작권·면책 표기 — 세 탭 모두 같은 꼬리말을 쓴다.
@@ -407,14 +402,6 @@ function renderHome(){
   </div>
 
   <div class="card">
-    <h2>문항 수</h2>
-    <div class="seg" id="cntSeg">
-      ${[10,20,30,50].map(n=>`<button data-n="${n}" class="${sel.count===n?"on":""}">${n}</button>`).join("")}
-      <button data-n="0" class="${sel.count===0?"on":""}">전체</button>
-    </div>
-  </div>
-
-  <div class="card">
     <h2>회차 선택 <button class="fold" id="rndAll">${allRndOn?"전체 해제":"전체 선택"}</button></h2>
     <div class="chips" id="rndChips">
       ${ALL_ROUNDS.map(r=>`<button class="chip ${sel.rounds.has(r)?"on":""}" data-rnd="${r}">${r}회</button>`).join("")}
@@ -433,7 +420,7 @@ function renderHome(){
   </div>
 
   <button class="btn" id="startBtn" ${p.length===0?"disabled":""}>
-    문제 풀기 시작 (${sel.count===0?p.length:Math.min(sel.count,p.length)}문항 / 선택범위 ${p.length}문항)
+    문제 풀기 시작 (${p.length}문항 · 회차/번호 순)
   </button>
   <p class="hint">${freshHint()}</p>
 
@@ -461,10 +448,6 @@ function renderHome(){
     sel.rounds = new Set(sel.rounds.size===ALL_ROUNDS.length ? [] : ALL_ROUNDS);
     savePref(); renderHome();
   };
-  $("#cntSeg").addEventListener("click", ev=>{
-    const b = ev.target.closest("[data-n]"); if(!b) return;
-    sel.count = +b.dataset.n; savePref(); renderHome();
-  });
   const applyRange = ()=>{
     sel.range = [+$("#rngLo").value || 1, +$("#rngHi").value || 50];
     savePref(); renderHome();
@@ -473,9 +456,7 @@ function renderHome(){
   $("#rngHi").onchange = applyRange;
   $("#rngReset").onclick = ()=>{ sel.range = [1, 50]; savePref(); renderHome(); };
   $("#startBtn").onclick = ()=>{
-    const p2 = pool();
-    // 최근에 푼 문항을 뒤로 미루고 오래된·미출제 문항을 먼저 뽑는다
-    startQuiz(pickLRU(p2, sel.count===0 ? p2.length : sel.count), {});
+    startQuiz(pool().sort(byRoundAndNumber), {});
   };
   window.scrollTo(0,0);
 }
@@ -584,18 +565,24 @@ function renderQ(){
     <span class="meta">${kind}${quiz.idx+1} / ${total}</span>
   </div>
   <div class="prog"><i style="width:${(quiz.idx)/total*100}%"></i></div>
-  <div class="qmeta">
-    <span class="era-tag">제${q.r}회 ${q.n}번 · ${q.pts}점</span>
-  </div>
-  <div class="qimgbox"><img src="${imgPath(q)}" alt="제${q.r}회 ${q.n}번 문제"></div>
-  <div class="answerrow">
-    <button class="starbtn ${isStarred(q.id)?"on":""}" id="starBtn"
-      title="잘 몰라서 찍은 문제 — 복습 탭의 별표 목록에 모입니다">${isStarred(q.id)?"★":"☆"}</button>
-    <div class="answers" id="ansBtns">
-      ${CIRCLED.map((c,i)=>`<button data-a="${i+1}">${c}</button>`).join("")}
+  <div class="qbody">
+    <div class="qleft">
+      <div class="qmeta">
+        <span class="era-tag">제${q.r}회 ${q.n}번 · ${q.pts}점</span>
+      </div>
+      <div class="qimgbox"><img src="${imgPath(q)}" alt="제${q.r}회 ${q.n}번 문제"></div>
     </div>
-  </div>
-  <div id="feedback"></div>`;
+    <div class="qside">
+      <div class="answerrow">
+        <button class="starbtn ${isStarred(q.id)?"on":""}" id="starBtn"
+          title="잘 몰라서 찍은 문제 — 복습 탭의 별표 목록에 모입니다">${isStarred(q.id)?"★":"☆"}</button>
+        <div class="answers" id="ansBtns">
+          ${CIRCLED.map((c,i)=>`<button data-a="${i+1}">${c}</button>`).join("")}
+        </div>
+      </div>
+      <div id="feedback"></div>
+    </div>
+  </div>`;
 
   $("#quitBtn").onclick = ()=> quiz.answers.filter(Boolean).length ? renderResult() : goTab("practice");
   $("#pauseBtn").onclick = pauseQuiz;
@@ -810,7 +797,7 @@ function renderNote(){
     });
     $("#retryAll").onclick = ()=>{
       if(!shown.length) return;
-      startQuiz(shuffle(shown.map(x=>x.q)), isStar ? {fromStar:true} : {fromNote:true});
+      startQuiz(shown.map(x=>x.q).sort(byRoundAndNumber), isStar ? {fromStar:true} : {fromNote:true});
     };
     $("#autoRm").onchange = ev=>{
       if(isStar) pref.autoUnstar = ev.target.checked; else pref.autoRemove = ev.target.checked;
