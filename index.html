@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>한국사 기본 기출 퀴즈</title>
+<!-- 아이패드/아이폰 Safari '홈 화면에 추가'(웹클립) 지원 — 전체화면 단독 앱으로 뜬다.
+     웹클립 저장소는 Safari의 7일 미사용 삭제(ITP) 대상에서 제외라 학습 기록 보존에도 유리. -->
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="한국사 퀴즈">
 <meta name="description" content="한국사능력검정시험 기본 기출문제(10개 회차) 회차·번호순 출제 · 채점 · 해설 · 오답노트">
 <style>
 :root{
@@ -142,7 +149,7 @@ h1{font-size:1.25rem;margin:8px 0 2px}
 const $ = sel => document.querySelector(sel);
 const app = $("#app");
 const CIRCLED = ["①","②","③","④"];
-const APP_VERSION = "2026.08.29.1";
+const APP_VERSION = "2026.08.29.2";
 const LS_WRONG = "khq_wrong_v1";
 const LS_STAR  = "khq_star_v1";    // 별표(잘 몰라서 찍은 문제) — 오답과 별개로 보관
 const LS_PREF  = "khq_pref_v1";
